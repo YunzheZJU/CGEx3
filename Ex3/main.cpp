@@ -5,17 +5,27 @@
 #include <stdlib.h>
 #include "glut.h"
 
+#define X 0
+#define Y 1
+#define Z 2
 
 float fTranslate;
 float fRotate    = 0.0f;
 float fScale     = 1.0f;	// set inital scale value to 1.0f
+float fTpRtt = 0.0f;
 
 bool bPersp = false;
 bool bAnim = false;
+bool bRtt = false;
 bool bWire = false;
 
 int wHeight = 0;
 int wWidth = 0;
+
+float eye[] = { 0, 0, 8 };
+float center[] = { 0, 0, 0 };
+float target[] = { 0, 0, 0 };
+//todo; hint: you may need another ARRAY when you operate the teapot
 
 //todo
 //hint: some additional parameters may needed here when you operate the teapot
@@ -28,39 +38,49 @@ void Draw_Leg()
 
 void Draw_Scene()
 {
+	// 在这个函数范围内，横x深y纵z
+	// teapot
 	glPushMatrix();
-	glTranslatef(0, 0, 4+1);
-	glRotatef(90, 1, 0, 0); //notice the rotation here, you may have a TRY removing this line to see what it looks like.
-	//todo; hint: when operate the teapot, you may need to change some parameters
-	glutSolidTeapot(1);
+	glTranslatef(target[0], target[1], target[2]);
+		glPushMatrix();
+		glTranslatef(0, 0, 4+1);
+		glRotatef(90, 1, 0, 0); //notice the rotation here, you may have a TRY removing this line to see what it looks like.
+		//hint: when operate the teapot, you may need to change some parameters
+		glRotatef(fTpRtt, 0, 1, 0);
+		glutSolidTeapot(1);
+		glPopMatrix();
 	glPopMatrix();
-
+	
+	// table
 	glPushMatrix();
 	glTranslatef(0, 0, 3.5);
 	glScalef(5, 4, 1);
 	glutSolidCube(1.0);
 	glPopMatrix();
 
+	// leg1
 	glPushMatrix();
 	glTranslatef(1.5, 1, 1.5);
 	Draw_Leg();
 	glPopMatrix();
 
+	// leg2
 	glPushMatrix();
 	glTranslatef(-1.5, 1, 1.5);
 	Draw_Leg();
 	glPopMatrix();
 
+	// leg3
 	glPushMatrix();
 	glTranslatef(1.5, -1, 1.5);
 	Draw_Leg();
 	glPopMatrix();
 
+	// leg4
 	glPushMatrix();
 	glTranslatef(-1.5, -1, 1.5);
 	Draw_Leg();
 	glPopMatrix();
-
 }
 
 void updateView(int width, int height)
@@ -74,6 +94,7 @@ void updateView(int width, int height)
 
 	if (bPersp){
 		//todo when 'p' operation, hint: use FUNCTION gluPerspective
+		gluPerspective(45.0f, whRatio, 0.1f, 100.0f);
 	}
 	else
 		glOrtho(-3 ,3, -3, 3,-100,100);
@@ -99,10 +120,6 @@ void idle()
 	glutPostRedisplay();
 }
 
-float eye[] = {0, 0, 8};
-float center[] = {0, 0, 0};
-//todo; hint: you may need another ARRAY when you operate the teapot
-
 void key(unsigned char k, int x, int y)
 {
 	switch(k)
@@ -114,39 +131,64 @@ void key(unsigned char k, int x, int y)
 	case ' ': {bAnim = !bAnim; break;}
 	case 'o': {bWire = !bWire; break;}
 
-	case 'a': {//todo, hint: eye[] and center[] are the keys to solve the problems
+	case 'a': {//hint: eye[] and center[] are the keys to solve the problems
+		eye[X] -= 0.1;
+		center[X] -= 0.1;
 		break;
 			  }
-	case 'd': {//todo
+	case 'd': {
+		eye[X] += 0.1;
+		center[X] += 0.1;
 		break;
 			  }
-	case 'w': {//todo
+	case 'w': {
+		eye[Y] += 0.1;
+		center[Y] += 0.1;
 		break;
 			  }
-	case 's': {//todo
+	case 's': {
+		eye[Y] -= 0.1;
+		center[Y] -= 0.1;
 		break;
 			  }
-	case 'z': {//todo
+	case 'z': {
+		eye[Z] -= 0.2;
+		center[Z] -= 0.2;
 		break;
 			  }
-	case 'c': {//todo
+	case 'c': {
+		eye[Z] += 0.2;
+		center[Z] += 0.2;
 		break;
 			  }
 
 			  //茶壶相关操作
-	case 'l': {//todo, hint:use the ARRAY that you defined, and notice the teapot can NOT be moved out the range of the table.
+	case 'l': {//hint:use the ARRAY that you defined, and notice the teapot can NOT be moved out the range of the table.
+		if (target[X] <= 2) {
+			target[X] += 0.2;
+		}
 		break;
 			  }
-	case 'j': {//todo
+	case 'j': {
+		if (target[X] >= -2) {
+			target[X] -= 0.2;
+		}
 		break;
 			  }
-	case 'i': {//todo
+	case 'i': {
+		if (target[Y] <= 1.5) {
+			target[Y] += 0.2;
+		}
 		break;
 			  }
-	case 'k': {//todo
+	case 'k': {
+		if (target[Y] >= -1.5) {
+			target[Y] -= 0.2;
+		}
 		break;
 			  }
-	case 'e': {//todo
+	case 'e': {
+		bRtt = !bRtt;
 		break;
 			  }
 	}
@@ -159,9 +201,9 @@ void redraw()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();									// Reset The Current Modelview Matrix
 
-	gluLookAt(eye[0], eye[1], eye[2],
-		center[0], center[1], center[2],
-		0, 1, 0);				// 场景（0，0，0）的视点中心 (0,5,50)，Y轴向上
+	gluLookAt(eye[X], eye[Y], eye[Z],
+		center[X], center[Y], center[Z],
+		0, 1, 0);				// 场景（0，0，8）的视点中心（0, 0, 0），Y轴向上
 
 	if (bWire) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -179,14 +221,13 @@ void redraw()
 	glLightfv(GL_LIGHT0, GL_AMBIENT, white);
 	glEnable(GL_LIGHT0);
 
-	//	glTranslatef(0.0f, 0.0f,-6.0f);			// Place the triangle at Center
 	glRotatef(fRotate, 0, 1.0f, 0);			// Rotate around Y axis
 	glRotatef(-90, 1, 0, 0);
 	glScalef(0.2, 0.2, 0.2);
-	Draw_Scene();						// Draw Scene
+	Draw_Scene();							// Draw Scene
 
 	if (bAnim) fRotate    += 0.5f;
-
+	if (bRtt) fTpRtt += 0.5f;
 	//todo; hint: when you want to rotate the teapot, you may like to add another line here =)
 	glutSwapBuffers();
 }
@@ -206,5 +247,3 @@ int main (int argc,  char *argv[])
 	glutMainLoop();
 	return 0;
 }
-
-
